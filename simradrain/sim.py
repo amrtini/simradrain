@@ -74,7 +74,7 @@ class SimRain:
         :param marginals: Dictionary of event marginal distributions (dict)
         :param cov: Covariance structure of latent Gaussian field, can be nested structures (str)
         :param domain: Spatial domain size - 1km pixel grid (tuple)
-        :param adv: Advection velocity, (vx, vy) - mm/h (tuple)
+        :param adv: Advection velocity, (vx, vy) - m/s (tuple)
         :param xy_anis: Spatial anisotropy stretch and rotation, (r, theta) (tuple)
         :param st_anis: Spatiotemporal anisotropy factor (float)
         :param mem_lim: Memory limit in GiB (float)
@@ -260,16 +260,16 @@ class SimRain:
             print("Adding in advection effects.")
             rainfall = np.full([self.dur, self.domain[1], self.domain[0]], np.nan)
             adv_gaussian = np.full([self.dur, self.domain[1], self.domain[0]], np.nan)
-            nu_shifts = np.zeros([2, self.dur], dtype=int)
-            if any(nu_shifts.flatten() != 0):
-                for i in range(2):
-                    # convert to pixels
-                    shifts = - (np.arange(self.dur) * adv[i] / 1000 * 300)
-                    # convert to integers
-                    nu_shifts[i] = (shifts - np.min(shifts)).astype(int)
+            #nu_shifts = np.zeros([2, self.dur], dtype=int)
+            #if any(self.nu_shifts.flatten() != 0):
+            #    for i in range(2):
+            #        # convert to pixels
+            #        shifts = - (np.arange(self.dur) * adv[i] / 1000 * 300)
+            #        # convert to integers
+            #        nu_shifts[i] = (shifts - np.min(shifts)).astype(int)
 
             for t in range(self.dur):
-                x_min, y_min = nu_shifts[:, t]
+                x_min, y_min = self.nu_shifts[:, t]
                 subset_rain = stationary_rain[
                               t,
                               y_min: y_min + self.domain[1],
@@ -285,7 +285,8 @@ class SimRain:
             unif = norm.cdf(gauss_01.flatten()).reshape(adv_gaussian.shape)
 
             zero_vals = unif <= self.marginals["prop_zero"]
-            rain_vals = unif > 1 - self.marginals["prop_nz"] * self.marginals["prop_rain"]
+            #rain_vals = unif > 1 - self.marginals["prop_nz"] * self.marginals["prop_rain"]
+            rain_vals = unif > 1 - self.marginals["prop_rain"]
             nz_vals = (~zero_vals) & (~rain_vals)
 
             to_transform = (unif[rain_vals] - np.min(unif[rain_vals])) / (1 - np.min(unif[rain_vals]))

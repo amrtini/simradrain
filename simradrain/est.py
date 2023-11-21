@@ -200,9 +200,13 @@ class Event:
 
         # read in hdf5 event file
         print("Reading in event data.")
-        with h5py.File(self.file_path, "r") as hf:
-            self.arrays = hf["rainfall"][:]
-
+        if self.file_path.endswith(".hdf5"):
+            
+            with h5py.File(self.file_path, "r") as hf:
+                self.arrays = hf["rainfall"][:]
+        else:
+            self.arrays = np.load(self.file_path)
+        
         # allocate attributes
         self.raw_advection = None
         self.advection = None
@@ -363,7 +367,7 @@ class Event:
         self.arrays[(self.arrays >= rain_thresh) & (~np.isnan(self.arrays))].shape[0] / non_missing
 
         rainfall = self.arrays[(self.arrays >= rain_thresh) & (~np.isnan(self.arrays))]
-        k, loc, scale = gamma.fit(rainfall)
+        k, loc, scale = gamma.fit(rainfall, method="MM")
 
         self.rainfall_marginals["k"] = k
         self.rainfall_marginals["loc"] = loc
@@ -507,8 +511,8 @@ class Event:
         values = [optim_lambda1, optim_theta1, optim_mean_sq1, optim_lambda2, optim_theta2, optim_mean_sq2]
 
         self.spatial_anistopy_est = pd.Series(values, index=names)
-        self.lambda_xy = ev.spatial_anistopy_est.loc["optim_lambda1"]
-        self.theta_xy = ev.spatial_anistopy_est.loc["optim_theta2"]
+        self.lambda_xy = self.spatial_anistopy_est.loc["optim_lambda1"]
+        self.theta_xy = self.spatial_anistopy_est.loc["optim_theta2"]
 
         # rotate and stretch to get spatially isotropic field
         rotated = rotate(self.empirical_variogram, self.theta_xy, axes=(1, 2), reshape=True)
